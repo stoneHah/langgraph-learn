@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python异步编程(AsyncIO)教程 - 可视化指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // 初始主题设置
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+        
+        .code-block {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+        
+        .diagram-container {
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+        }
+        
+        .dark .diagram-bg {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        
+        .light .diagram-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100">
+    <!-- 导航栏 -->
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fab fa-python text-2xl text-blue-500 mr-2"></i>
+                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">AsyncIO教程</span>
+                    </div>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="#overview" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">概述</a>
+                        <a href="#sync-vs-async" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">同步 vs 异步</a>
+                        <a href="#coroutines" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">协程</a>
+                        <a href="#event-loop" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">事件循环</a>
+                        <a href="#examples" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">示例</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-moon text-gray-700 dark:text-yellow-400 dark:hidden"></i>
+                        <i class="fas fa-sun text-yellow-400 hidden dark:block"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部 -->
+    <header class="relative bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 py-20 overflow-hidden">
+        <div class="absolute inset-0 opacity-10 dark:opacity-5">
+            <div class="absolute top-0 left-20 w-64 h-64 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+            <div class="absolute top-0 right-20 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+            <div class="absolute bottom-20 left-1/2 w-64 h-64 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white fade-in">
+                    Python 异步编程<span class="text-blue-600">(AsyncIO)</span>教程
+                </h1>
+                <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300 fade-in">
+                    掌握高效处理I/O密集型任务的现代编程范式
+                </p>
+                <div class="mt-10 flex justify-center fade-in">
+                    <a href="#overview" class="btn inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        开始学习
+                        <i class="fas fa-arrow-down ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main>
+        <!-- 概述部分 -->
+        <section id="overview" class="py-16 fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                        异步编程概述
+                    </h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                        理解同步与异步编程的核心差异
+                    </p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center mb-4">
+                            <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
+                                <i class="fas fa-sync-alt text-lg"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-bold text-gray-900 dark:text-white">同步编程</h3>
+                        </div>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            在同步编程中，任务按顺序执行，一个任务完成前程序会一直等待，导致其他任务无法执行。
+                        </p>
+                        <div class="mt-6">
+                            <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                                <div class="flex items-center mb-3">
+                                    <div class="h-3 w-3 bg-red-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-64"></div>
+                                </div>
+                                <div class="flex items-center mb-3">
+                                    <div class="h-3 w-3 bg-yellow-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="h-3 w-3 bg-green-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-48"></div>
+                                </div>
+                                <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                                    任务依次执行，一个完成后才能开始下一个
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center mb-4">
+                            <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400">
+                                <i class="fas fa-bolt text-lg"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-bold text-gray-900 dark:text-white">异步编程</h3>
+                        </div>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            异步编程允许程序在等待耗时操作（如网络请求）时执行其他任务，提高效率。
+                        </p>
+                        <div class="mt-6">
+                            <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                                <div class="flex mb-3">
+                                    <div class="h-3 w-3 bg-red-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-20 mr-8"></div>
+                                    <div class="h-3 w-3 bg-yellow-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                                </div>
+                                <div class="flex mb-3">
+                                    <div class="h-3 w-3 bg-yellow-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-24 mr-8"></div>
+                                    <div class="h-3 w-3 bg-green-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+                                </div>
+                                <div class="flex">
+                                    <div class="h-3 w-3 bg-green-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-16 mr-8"></div>
+                                    <div class="h-3 w-3 bg-red-500 rounded-full mr-2"></div>
+                                    <div class="h-2 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+                                </div>
+                                <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                                    任务并发执行，在等待时切换到其他任务
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700/50">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-lightbulb text-2xl text-yellow-500"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">生活类比</h3>
+                            <p class="mt-2 text-blue-700 dark:text-blue-300">
+                                <span class="font-semibold">同步模式</span>就像在银行排队，一个人办完业务下一个人才能开始。
+                                <span class="font-semibold">异步模式</span>则像取号后去逛街，等叫号时再回来办理业务，中间不必白白等待。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 同步 vs 异步 -->
+        <section id="sync-vs-async" class="py-16 bg-gray-50 dark:bg-gray-800/50 fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                        同步 vs 异步
+                    </h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                        两种编程模式的详细对比
+                    </p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-sync-alt text-blue-500 mr-2"></i> 同步编程
+                        </h3>
+                        <ul class="mt-4 space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                <span>按部就班执行任务，当前任务完成才开始下一个</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                <span>简单直观，易于理解和调试</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-times-circle text-red-500 mt-1 mr-2"></i>
+                                <span>遇到耗时操作（如网络请求）时，程序会被"卡住"等待</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-times-circle text-red-500 mt-1 mr-2"></i>
+                                <span>资源利用率低，CPU在等待时处于空闲状态</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-times-circle text-red-500 mt-1 mr-2"></i>
+                                <span>不适合处理大量I/O密集型任务</span>
+                            </li>
+                        </ul>
+                        <div class="mt-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">银行排队示例</div>
+                            <div class="flex items-center justify-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white mb-2">1</div>
+                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white mb-2">2</div>
+                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">3</div>
+                                </div>
+                                <div class="ml-4 text-gray-500 dark:text-gray-400">
+                                    <p>依次等待处理</p>
+                                    <p class="mt-2">总时间 = 时间1 + 时间2 + 时间3</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-bolt text-purple-500 mr-2"></i> 异步编程
+                        </h3>
+                        <ul class="mt-4 space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                <span>在等待耗时操作时切换到其他任务</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                <span>高效利用资源，减少等待时间</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                <span>特别适合I/O密集型应用（网络请求、文件操作等）</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-times-circle text-red-500 mt-1 mr-2"></i>
+                                <span>编程模型更复杂，需要理解协程和事件循环</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-times-circle text-red-500 mt-1 mr-2"></i>
+                                <span>不适合CPU密集型任务，可能阻塞事件循环</span>
+                            </li>
+                        </ul>
+                        <div class="mt-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">银行取号示例</div>
+                            <div class="flex items-center justify-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white mb-2">1</div>
+                                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white mb-2">2</div>
+                                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white">3</div>
+                                </div>
+                                <div class="ml-4 text-gray-500 dark:text-gray-400">
+                                    <p>同时发起请求</p>
+                                    <p class="mt-2">总时间 ≈ max(时间1, 时间2, 时间3)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">效率对比</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">场景</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">同步模式</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">异步模式</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">效率提升</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">下载3个文件(各2秒)</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">6秒</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">~2秒</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">3倍</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">处理100个网络请求</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">线性增加</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">接近常数时间</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">显著</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">CPU密集型任务</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">无优势</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">无优势</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-yellow-500 font-semibold">无提升</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 协程 -->
+        <section id="coroutines" class="py-16 fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                        协程 (Coroutine)
+                    </h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                        异步编程的基本构建块
+                    </p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">什么是协程？</h3>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                协程是可以暂停执行的函数，在Python中使用 <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">async def</code> 定义。
+                            </p>
+                            <div class="mt-4">
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                        <span>使用 <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">async def</code> 定义协程函数</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                        <span>调用协程函数返回协程对象，而不是立即执行</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                        <span>使用 <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">await</code> 暂停执行，等待操作完成</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                        <span>需要事件循环驱动执行</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mt-8">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">协程示例</h3>
+                            <div class="bg-gray-800 rounded-lg overflow-hidden">
+                                <pre class="p-4 text-sm text-gray-100 overflow-x-auto">
+<span class="text-blue-400">import</span> asyncio
+
+<span class="text-pink-400">async def</span> <span class="text-yellow-300">download</span>(file_id):
+    <span class="text-green-400">print</span>(<span class="text-yellow-200">f"[开始]下载文件{file_id}..."</span>)
+    <span class="text-blue-400">await</span> asyncio.sleep(<span class="text-orange-400">2</span>)  <span class="text-gray-500"># 模拟耗时操作</span>
+    <span class="text-green-400">print</span>(<span class="text-yellow-200">f"[完成]文件{file_id}下载完成"</span>)
+
+<span class="text-pink-400">async def</span> <span class="text-yellow-300">main</span>():
+    <span class="text-blue-400">await</span> download(<span class="text-orange-400">1</span>)  <span class="text-gray-500"># 同步等待完成</span>
+    <span class="text-blue-400">await</span> download(<span class="text-orange-400">2</span>)  <span class="text-gray-500"># 然后等待下一个</span>
+
+<span class="text-green-400">asyncio.run</span>(main())</pre>
+                            </div>
+                            <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                                输出结果:
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded p-3 mt-2 font-mono">
+                                    [开始]下载文件1...<br>
+                                    [完成]文件1下载完成<br>
+                                    [开始]下载文件2...<br>
+                                    [完成]文件2下载完成
+                                </div>
+                                <p class="mt-2">总耗时约4秒（顺序执行）</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 h-full">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">协程如何工作？</h3>
+                            <div class="flex items-center justify-center mb-6">
+                                <div class="relative w-full max-w-md">
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="w-48 h-48 rounded-full border-4 border-blue-500 border-dashed animate-spin-slow"></div>
+                                    </div>
+                                    <div class="relative z-10 flex flex-col items-center">
+                                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mb-4 shadow-lg">
+                                            <i class="fas fa-play"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="font-semibold">事件循环</div>
+                                            <div class="text-sm text-gray-500 dark:text-gray-400">调度和执行协程</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">1</div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">协程启动</p>
+                                        <p class="mt-1 text-gray-600 dark:text-gray-300">调用协程函数返回协程对象，但不会立即执行</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">2</div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">遇到await</p>
+                                        <p class="mt-1 text-gray-600 dark:text-gray-300">协程执行到await表达式时暂停，控制权返回事件循环</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">3</div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">事件循环调度</p>
+                                        <p class="mt-1 text-gray-600 dark:text-gray-300">事件循环选择其他就绪的协程执行</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">4</div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">恢复执行</p>
+                                        <p class="mt-1 text-gray-600 dark:text-gray-300">当await的操作完成后，协程恢复执行</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 事件循环 -->
+        <section id="event-loop" class="py-16 bg-gray-50 dark:bg-gray-800/50 fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                        事件循环 (Event Loop)
+                    </h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                        AsyncIO的核心调度机制
+                    </p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">事件循环是什么？</h3>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            事件循环是AsyncIO的核心，它在一个线程内不断循环，从任务队列中取出协程执行，遇到await时暂停当前协程，转去执行其他协程。
+                        </p>
+                        
+                        <div class="mt-6">
+                            <div class="flex items-center mb-4">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                    <i class="fas fa-sync-alt"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white">中央调度器</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">管理和调度所有协程任务</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center mb-4">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white">单线程运行</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">所有任务在单线程上交替执行</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white">协作式多任务</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">协程主动让出控制权，实现任务切换</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">事件循环工作流程</h3>
+                        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                            <div class="relative">
+                                <div class="absolute left-6 top-0 bottom-0 w-1 bg-blue-200 dark:bg-blue-900"></div>
+                                <div class="relative space-y-8 pl-10">
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">1. 启动事件循环</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">通过 <code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">asyncio.run(main())</code> 启动</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">2. 执行主协程</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">事件循环开始执行 <code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">main()</code> 协程</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">3. 遇到await暂停</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">当遇到 <code class="bg-gray-200 dark:bg-gray-600 px-1 rounded">await</code> 时，当前协程暂停</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">4. 调度其他任务</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">事件循环选择其他就绪的协程执行</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">5. 恢复执行</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">当await的操作完成，协程恢复执行</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute left-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">6. 循环结束</h4>
+                                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">所有任务完成后，事件循环终止</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">事件循环可视化</h3>
+                    <div class="diagram-container bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                        <div class="diagram-bg w-full h-full rounded-lg relative overflow-hidden">
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="relative w-64 h-64">
+                                    <!-- Event Loop Circle -->
+                                    <div class="absolute inset-0 rounded-full border-4 border-blue-500 border-dashed animate-spin-slow"></div>
+                                    
+                                    <!-- Coroutines -->
+                                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xs shadow-lg animate-pulse">
+                                            <i class="fas fa-code"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
+                                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xs shadow-lg animate-pulse delay-1000">
+                                            <i class="fas fa-code"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
+                                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xs shadow-lg animate-pulse delay-2000">
+                                            <i class="fas fa-code"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2">
+                                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xs shadow-lg animate-pulse delay-3000">
+                                            <i class="fas fa-code"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Center Processor -->
+                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-xl">
+                                        <i class="fas fa-microchip text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        事件循环在单线程内调度多个协程，每个方块代表一个协程任务，它们在事件循环的调度下交替执行
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 示例部分 -->
+        <section id="examples" class="py-16 fade-in">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                        异步编程示例
+                    </h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                        实际应用场景演示
+                    </p>
+                </div>
+
+                <div class="mt-12">
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">并发下载示例</h3>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            使用AsyncIO同时下载多个文件，显著减少总等待时间
+                        </p>
+                        
+                        <div class="mt-6 bg-gray-800 rounded-lg overflow-hidden">
+                            <pre class="p-4 text-sm text-gray-100 overflow-x-auto">
+<span class="text-blue-400">import</span> asyncio
+<span class="text-blue-400">import</span> random
+
+<span class="text-pink-400">async def</span> <span class="text-yellow-300">fetch_url</span>(url):
+    <span class="text-green-400">print</span>(<span class="text-yellow-200">f"开始爬取 [<span class="text-cyan-400">{url}</span>]"</span>)
+    <span class="text-gray-500"># 模拟网络延时</span>
+    delay = random.uniform(<span class="text-orange-400">1</span>, <span class="text-orange-400">3</span>)
+    <span class="text-blue-400">await</span> asyncio.sleep(delay)
+    <span class="text-green-400">print</span>(<span class="text-yellow-200">f"爬取完成 [<span class="text-cyan-400">{url}</span>] (耗时 {delay:.1f}s)"</span>)
+
+<span class="text-pink-400">async def</span> <span class="text-yellow-300">main</span>():
+    urls = [<span class="text-yellow-200">"url1"</span>, <span class="text-yellow-200">"url2"</span>, <span class="text-yellow-200">"url3"</span>] 
+    tasks = [asyncio.create_task(fetch_url(u)) <span class="text-pink-400">for</span> u <span class="text-pink-400">in</span> urls]
+    <span class="text-blue-400">await</span> asyncio.gather(*tasks)
+    <span class="text-green-400">print</span>(<span class="text-yellow-200">"所有爬取任务完成"</span>)
+
+<span class="text-green-400">asyncio.run</span>(main())</pre>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h4 class="font-bold text-gray-900 dark:text-white mb-2">执行结果</h4>
+                            <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">任务1</div>
+                                        <div class="mt-2">
+                                            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                                                <div class="h-2 bg-green-500 rounded-full animate-progress" style="width: 70%; animation-duration: 1.5s"></div>
+                                            </div>
+                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">耗时: 1.5s</div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">任务2</div>
+                                        <div class="mt-2">
+                                            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                                                <div class="h-2 bg-blue-500 rounded-full animate-progress" style="width: 100%; animation-duration: 2s"></div>
+                                            </div>
+                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">耗时: 2.0s</div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">任务3</div>
+                                        <div class="mt-2">
+                                            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                                                <div class="h-2 bg-purple-500 rounded-full animate-progress" style="width: 100%; animation-duration: 2.5s"></div>
+                                            </div>
+                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">耗时: 2.5s</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700/50">
+                                    <div class="text-blue-800 dark:text-blue-200 font-medium">总耗时: ~2.5秒 (而不是6秒)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center mb-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <i class="fas fa-spider text-lg"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-bold text-gray-900 dark:text-white">网络爬虫</h3>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            异步爬虫可以同时处理多个网页请求，在等待响应时处理其他页面，显著提高爬取效率。
+                        </p>
+                    </div>
+                    
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center mb-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                <i class="fas fa-server text-lg"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-bold text-gray-900 dark:text-white">Web服务</h3>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            FastAPI、Sanic等异步Web框架可以高效处理大量并发请求，特别适合API服务和微服务架构。
+                        </p>
+                    </div>
+                    
+                    <div class="card bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center mb-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-md bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 flex items-center justify-center">
+                                <i class="fas fa-database text-lg"></i>
+                            </div>
+                            <h3 class="ml-4 text-xl font-bold text-gray-900 dark:text-white">数据库操作</h3>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300">
+                            异步数据库驱动可以在等待查询结果时处理其他请求，提高数据库密集型应用的吞吐量。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="border-t border-gray-800 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-6 md:mb-0">
+                        <div class="flex items-center">
+                            <i class="fab fa-python text-2xl text-blue-500 mr-2"></i>
+                            <span class="text-xl font-bold">Python异步编程教程</span>
+                        </div>
+                        <div class="mt-4 text-gray-400">
+                            <p>基于AsyncIO的高效I/O处理解决方案</p>
+                        </div>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <h3 class="text-lg font-semibold mb-4">作者信息</h3>
+                        <div class="text-gray-400">
+                            <p>作者姓名: Qun Zheng</p>
+                            <p class="mt-2">© 2023 Python异步编程教程. 保留所有权利。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 主题切换功能
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlElement = document.documentElement;
+        
+        themeToggle.addEventListener('click', () => {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                htmlElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        });
+        
+        // 滚动动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
